@@ -1,14 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Target, Plus, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AIAssistant } from "@/components/ai-assistant";
+import { Target, Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit, Trash2 } from "lucide-react";
 
 export default function OKRsPage() {
   const { objectives } = useStore();
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedOKR, setSelectedOKR] = useState<typeof objectives[0] | null>(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    quarter: "Q1",
+    year: 2024,
+    category: "",
+  });
 
   const onTrack = objectives.filter((o) => o.status === "on-track").length;
   const atRisk = objectives.filter((o) => o.status === "at-risk").length;
@@ -40,6 +54,40 @@ export default function OKRsPage() {
     }
   };
 
+  const handleCreateOKR = () => {
+    console.log("Creating OKR:", formData);
+    // In a real app, this would call an API to create the OKR
+    alert(`OKR "${formData.title}" created successfully!`);
+    setShowNewDialog(false);
+    setFormData({ title: "", description: "", quarter: "Q1", year: 2024, category: "" });
+  };
+
+  const handleEditOKR = (okr: typeof objectives[0]) => {
+    setSelectedOKR(okr);
+    setFormData({
+      title: okr.title,
+      description: okr.description,
+      quarter: okr.quarter,
+      year: okr.year,
+      category: okr.category,
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateOKR = () => {
+    console.log("Updating OKR:", selectedOKR?.id, formData);
+    alert(`OKR updated successfully!`);
+    setShowEditDialog(false);
+    setSelectedOKR(null);
+  };
+
+  const handleDeleteOKR = (okr: typeof objectives[0]) => {
+    if (confirm(`Are you sure you want to delete "${okr.title}"?`)) {
+      console.log("Deleting OKR:", okr.id);
+      alert("OKR deleted successfully!");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -50,7 +98,7 @@ export default function OKRsPage() {
             Track and manage objectives and key results
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Objective
         </Button>
@@ -130,11 +178,27 @@ export default function OKRsPage() {
                     <Badge variant="outline">{objective.category}</Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-gray-900">
-                    {objective.progress}%
+                <div className="flex items-center gap-2">
+                  <div className="text-right mr-4">
+                    <div className="text-3xl font-bold text-gray-900">
+                      {objective.progress}%
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Overall Progress</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Overall Progress</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditOKR(objective)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteOKR(objective)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -184,6 +248,150 @@ export default function OKRsPage() {
           </Card>
         ))}
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant context="okr" />
+
+      {/* New OKR Dialog */}
+      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New OKR</DialogTitle>
+            <DialogDescription>
+              Define a new objective and key results for your team
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Objective Title</label>
+              <Input
+                placeholder="e.g., Accelerate Product Growth"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Description</label>
+              <Input
+                placeholder="Describe the objective"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Quarter</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.quarter}
+                  onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
+                >
+                  <option value="Q1">Q1</option>
+                  <option value="Q2">Q2</option>
+                  <option value="Q3">Q3</option>
+                  <option value="Q4">Q4</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Year</label>
+                <Input
+                  type="number"
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Category</label>
+              <select
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="">Select category</option>
+                <option value="Growth">Growth</option>
+                <option value="Technology">Technology</option>
+                <option value="Revenue">Revenue</option>
+                <option value="Product">Product</option>
+                <option value="Customer">Customer</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateOKR} disabled={!formData.title || !formData.category}>
+              Create OKR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit OKR Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit OKR</DialogTitle>
+            <DialogDescription>
+              Update objective details
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Objective Title</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Description</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Category</label>
+              <select
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="Growth">Growth</option>
+                <option value="Technology">Technology</option>
+                <option value="Revenue">Revenue</option>
+                <option value="Product">Product</option>
+                <option value="Customer">Customer</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateOKR}>
+              Update OKR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AIAssistant } from "@/components/ai-assistant";
 import {
   LineChart,
   Line,
@@ -261,6 +262,9 @@ export default function PerformanceMetricsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Assistant */}
+      <AIAssistant context="analytics" />
     </div>
   );
 }

@@ -1,16 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AIAssistant } from "@/components/ai-assistant";
 import { Search, Plus, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default function CustomerFeedbackPage() {
   const { customerFeedback } = useStore();
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [showReplyDialog, setShowReplyDialog] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<typeof customerFeedback[0] | null>(null);
+  const [formData, setFormData] = useState({
+    customer: "",
+    feedback: "",
+    category: "Feature Request",
+    priority: "medium",
+  });
+  const [replyText, setReplyText] = useState("");
 
   const getSentimentIcon = (sentiment: string) => {
     switch (sentiment) {
@@ -49,6 +62,32 @@ export default function CustomerFeedbackPage() {
     }
   };
 
+  const handleAddFeedback = () => {
+    console.log("Adding feedback:", formData);
+    alert(`Feedback from "${formData.customer}" added successfully!`);
+    setShowNewDialog(false);
+    setFormData({ customer: "", feedback: "", category: "Feature Request", priority: "medium" });
+  };
+
+  const handleReply = (feedback: typeof customerFeedback[0]) => {
+    setSelectedFeedback(feedback);
+    setReplyText("");
+    setShowReplyDialog(true);
+  };
+
+  const handleSendReply = () => {
+    console.log("Sending reply to:", selectedFeedback?.customer, "Message:", replyText);
+    alert(`Reply sent to ${selectedFeedback?.customer} successfully!`);
+    setShowReplyDialog(false);
+    setSelectedFeedback(null);
+    setReplyText("");
+  };
+
+  const handleMarkAsActioned = (feedback: typeof customerFeedback[0]) => {
+    console.log("Marking as actioned:", feedback.id);
+    alert(`Feedback from "${feedback.customer}" marked as actioned!`);
+  };
+
   const positive = customerFeedback.filter((f) => f.sentiment === "positive");
   const negative = customerFeedback.filter((f) => f.sentiment === "negative");
   const neutral = customerFeedback.filter((f) => f.sentiment === "neutral");
@@ -62,7 +101,7 @@ export default function CustomerFeedbackPage() {
             Manage and respond to customer feedback
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Feedback
         </Button>
@@ -155,8 +194,8 @@ export default function CustomerFeedbackPage() {
                       <span>{formatDate(item.date)}</span>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline">Reply</Button>
-                      <Button size="sm" variant="outline">Mark as Actioned</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleReply(item)}>Reply</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleMarkAsActioned(item)}>Mark as Actioned</Button>
                     </div>
                   </div>
                 </div>
@@ -210,8 +249,8 @@ export default function CustomerFeedbackPage() {
                       <span>{formatDate(item.date)}</span>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline">Reply</Button>
-                      <Button size="sm" variant="outline">Escalate</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleReply(item)}>Reply</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleMarkAsActioned(item)}>Escalate</Button>
                     </div>
                   </div>
                 </div>
@@ -254,6 +293,122 @@ export default function CustomerFeedbackPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* AI Assistant */}
+      <AIAssistant context="feedback" />
+
+      {/* New Feedback Dialog */}
+      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Customer Feedback</DialogTitle>
+            <DialogDescription>
+              Record new customer feedback for tracking and analysis
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Customer Name</label>
+              <Input
+                placeholder="e.g., John Smith"
+                value={formData.customer}
+                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Feedback</label>
+              <Input
+                placeholder="Enter customer feedback"
+                value={formData.feedback}
+                onChange={(e) => setFormData({ ...formData, feedback: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Category</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="Feature Request">Feature Request</option>
+                  <option value="Bug Report">Bug Report</option>
+                  <option value="General">General</option>
+                  <option value="Support">Support</option>
+                  <option value="Product Feedback">Product Feedback</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Priority</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddFeedback} disabled={!formData.customer || !formData.feedback}>
+              Add Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reply Dialog */}
+      <Dialog open={showReplyDialog} onOpenChange={setShowReplyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reply to {selectedFeedback?.customer}</DialogTitle>
+            <DialogDescription>
+              Send a response to this customer feedback
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Original Feedback</label>
+              <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm text-gray-700">
+                {selectedFeedback?.feedback}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Your Reply</label>
+              <textarea
+                placeholder="Type your reply here..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm min-h-[120px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReplyDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendReply} disabled={!replyText.trim()}>
+              Send Reply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

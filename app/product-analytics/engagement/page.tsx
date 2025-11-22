@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { AIAssistant } from "@/components/ai-assistant";
 import {
   AreaChart,
   Area,
@@ -258,6 +259,9 @@ export default function UserEngagementPage() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* AI Assistant */}
+      <AIAssistant context="analytics" />
     </div>
   );
 }

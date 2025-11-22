@@ -1,14 +1,45 @@
 "use client";
 
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AIAssistant } from "@/components/ai-assistant";
 import { Plus, Calendar, Flag, Users } from "lucide-react";
 
 export default function ProductRoadmapPage() {
   const { roadmapItems } = useStore();
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    quarter: "Q1",
+    year: 2024,
+    priority: "should-have",
+    impact: "medium",
+    category: "Feature",
+    owner: "",
+  });
+
+  const handleCreateInitiative = () => {
+    console.log("Creating initiative:", formData);
+    alert(`Initiative "${formData.title}" added to roadmap!`);
+    setShowNewDialog(false);
+    setFormData({
+      title: "",
+      description: "",
+      quarter: "Q1",
+      year: 2024,
+      priority: "should-have",
+      impact: "medium",
+      category: "Feature",
+      owner: "",
+    });
+  };
 
   const plannedItems = roadmapItems.filter((i) => i.status === "planned");
   const inProgressItems = roadmapItems.filter((i) => i.status === "in-progress");
@@ -129,7 +160,7 @@ export default function ProductRoadmapPage() {
             Plan and track product initiatives across quarters
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Initiative
         </Button>
@@ -312,6 +343,131 @@ export default function ProductRoadmapPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* AI Assistant */}
+      <AIAssistant context="roadmap" />
+
+      {/* New Initiative Dialog */}
+      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Initiative</DialogTitle>
+            <DialogDescription>
+              Add a new product initiative to your roadmap
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Title</label>
+              <Input
+                placeholder="e.g., Advanced Analytics Dashboard"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Description</label>
+              <Input
+                placeholder="Describe the initiative"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Quarter</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.quarter}
+                  onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
+                >
+                  <option value="Q1">Q1</option>
+                  <option value="Q2">Q2</option>
+                  <option value="Q3">Q3</option>
+                  <option value="Q4">Q4</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Year</label>
+                <Input
+                  type="number"
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Priority</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.priority}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                >
+                  <option value="must-have">Must Have</option>
+                  <option value="should-have">Should Have</option>
+                  <option value="nice-to-have">Nice to Have</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Impact</label>
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={formData.impact}
+                  onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Category</label>
+              <select
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="Feature">Feature</option>
+                <option value="Enhancement">Enhancement</option>
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="Design">Design</option>
+                <option value="Research">Research</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Owner</label>
+              <Input
+                placeholder="e.g., Product Team"
+                value={formData.owner}
+                onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateInitiative} disabled={!formData.title || !formData.owner}>
+              Create Initiative
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

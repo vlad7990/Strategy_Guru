@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useStore } from "@/store/useStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AIAssistant } from "@/components/ai-assistant";
 import {
   RadarChart,
   Radar,
@@ -18,6 +22,19 @@ import { Plus, AlertTriangle, TrendingUp, Award } from "lucide-react";
 
 export default function CompetitiveIntelligencePage() {
   const { competitors } = useStore();
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    marketShare: 0,
+    threat: "medium",
+  });
+
+  const handleAddCompetitor = () => {
+    console.log("Adding competitor:", formData);
+    alert(`Competitor "${formData.name}" added successfully!`);
+    setShowNewDialog(false);
+    setFormData({ name: "", marketShare: 0, threat: "medium" });
+  };
 
   const getThreatBadge = (threat: string) => {
     switch (threat) {
@@ -82,7 +99,7 @@ export default function CompetitiveIntelligencePage() {
             Monitor competitors and track market positioning
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Competitor
         </Button>
@@ -301,6 +318,66 @@ export default function CompetitiveIntelligencePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Assistant */}
+      <AIAssistant context="competitive" />
+
+      {/* New Competitor Dialog */}
+      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Competitor</DialogTitle>
+            <DialogDescription>
+              Track a new competitor and analyze their market position
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Competitor Name</label>
+              <Input
+                placeholder="e.g., Competitor X"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Market Share (%)</label>
+              <Input
+                type="number"
+                placeholder="e.g., 15"
+                value={formData.marketShare || ""}
+                onChange={(e) => setFormData({ ...formData, marketShare: parseFloat(e.target.value) || 0 })}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Threat Level</label>
+              <select
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={formData.threat}
+                onChange={(e) => setFormData({ ...formData, threat: e.target.value })}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCompetitor} disabled={!formData.name}>
+              Add Competitor
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
