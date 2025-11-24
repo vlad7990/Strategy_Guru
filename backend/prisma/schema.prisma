@@ -1,0 +1,349 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String   // Hashed
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  objectives  Objective[]
+  metrics     Metric[]
+  feedback    CustomerFeedback[]
+  projects    Project[]
+  teamMembers TeamMember[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  PRODUCT_OWNER
+  USER
+  VIEWER
+}
+
+// ============================================
+// STRATEGY & OKRS
+// ============================================
+
+model Objective {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  quarter     String
+  year        Int
+  category    String
+  status      String   @default("active")
+  progress    Float    @default(0)
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  keyResults KeyResult[]
+
+  @@map("objectives")
+}
+
+model KeyResult {
+  id          String    @id @default(uuid())
+  title       String
+  target      Float
+  current     Float     @default(0)
+  unit        String
+  objectiveId String
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("key_results")
+}
+
+// ============================================
+// METRICS & ANALYTICS
+// ============================================
+
+model Metric {
+  id        String   @id @default(uuid())
+  name      String
+  value     Float
+  change    Float
+  trend     String // "up" | "down" | "stable"
+  period    String // "monthly" | "quarterly" | "yearly"
+  category  String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("metrics")
+}
+
+model FeatureAnalytic {
+  id             String   @id @default(uuid())
+  featureName    String
+  adoption       Float
+  engagement     Float
+  retention      Float
+  satisfaction   Float
+  category       String
+  launchedDate   DateTime
+  activeUsers    Int
+  totalUsers     Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("feature_analytics")
+}
+
+model ABTest {
+  id             String   @id @default(uuid())
+  name           String
+  description    String
+  status         String // "running" | "completed" | "paused"
+  startDate      DateTime
+  endDate        DateTime?
+  controlVariant Json // { name, users, conversions, conversionRate }
+  testVariant    Json // { name, users, conversions, conversionRate }
+  winner         String? // "control" | "test" | null
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("ab_tests")
+}
+
+// ============================================
+// CUSTOMERS & FEEDBACK
+// ============================================
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  company   String?
+  segment   String?
+  revenue   Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  feedback CustomerFeedback[]
+
+  @@map("customers")
+}
+
+model CustomerFeedback {
+  id         String   @id @default(uuid())
+  customer   String
+  feedback   String
+  sentiment  String // "positive" | "negative" | "neutral"
+  category   String
+  priority   String // "low" | "medium" | "high"
+  status     String   @default("open") // "open" | "in-progress" | "resolved"
+  date       DateTime @default(now())
+  customerId String?
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("customer_feedback")
+}
+
+model CustomerSegment {
+  id             String   @id @default(uuid())
+  name           String
+  description    String
+  customerCount  Int
+  revenue        Float
+  growth         Float
+  characteristics Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("customer_segments")
+}
+
+// ============================================
+// COMPETITIVE INTELLIGENCE
+// ============================================
+
+model Competitor {
+  id          String   @id @default(uuid())
+  name        String
+  marketShare Float
+  threat      String // "low" | "medium" | "high"
+  strengths   String[]
+  weaknesses  String[]
+  recentMoves String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("competitors")
+}
+
+// ============================================
+// ROADMAP & PLANNING
+// ============================================
+
+model RoadmapItem {
+  id           String   @id @default(uuid())
+  title        String
+  description  String
+  quarter      String
+  year         Int
+  status       String // "planned" | "in-progress" | "launched" | "cancelled"
+  priority     String // "must-have" | "should-have" | "nice-to-have"
+  impact       String // "high" | "medium" | "low"
+  category     String
+  owner        String
+  dependencies String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("roadmap_items")
+}
+
+// ============================================
+// PROJECTS & EXECUTION
+// ============================================
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String // "planning" | "in-progress" | "completed" | "on-hold"
+  progress    Float    @default(0)
+  budget      Float
+  spent       Float    @default(0)
+  startDate   DateTime
+  endDate     DateTime
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tasks Task[]
+
+  @@map("projects")
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("todo") // "todo" | "in-progress" | "done"
+  priority    String   @default("medium") // "low" | "medium" | "high"
+  assignee    String?
+  dueDate     DateTime?
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model TeamMember {
+  id           String   @id @default(uuid())
+  name         String
+  role         String
+  efficiency   Float
+  tasksCompleted Int
+  currentLoad  Int
+  availability String // "available" | "busy" | "away"
+  skills       String[]
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("team_members")
+}
+
+// ============================================
+// REPORTING
+// ============================================
+
+model Report {
+  id          String   @id @default(uuid())
+  name        String
+  type        String // "executive" | "product" | "financial" | "customer" | "operational"
+  description String?
+  frequency   String // "daily" | "weekly" | "monthly" | "quarterly" | "on-demand"
+  status      String   @default("active") // "active" | "archived"
+  lastRun     DateTime?
+  config      Json? // Report configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("reports")
+}
+
+// ============================================
+// ALERTS & NOTIFICATIONS
+// ============================================
+
+model Alert {
+  id          String   @id @default(uuid())
+  title       String
+  message     String
+  severity    String // "info" | "warning" | "critical"
+  category    String
+  status      String   @default("active") // "active" | "resolved" | "dismissed"
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("alerts")
+}
+
+// ============================================
+// INTEGRATIONS & DATA SOURCES
+// ============================================
+
+model DataSource {
+  id          String   @id @default(uuid())
+  name        String
+  type        String // "database" | "api" | "file"
+  status      String // "connected" | "disconnected" | "error"
+  lastSync    DateTime?
+  config      Json? // Connection configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("data_sources")
+}
+
+model Integration {
+  id          String   @id @default(uuid())
+  name        String // "Slack" | "Jira" | "Salesforce"
+  type        String
+  status      String // "active" | "inactive" | "error"
+  config      Json? // Integration configuration
+  lastUsed    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("integrations")
+}

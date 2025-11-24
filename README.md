@@ -126,8 +126,9 @@ Context-aware AI assistant integrated across key pages:
 
 - Node.js 18+ and npm
 - Git
+- PostgreSQL 14+ (for backend)
 
-### Installation
+### Frontend Installation
 
 ```bash
 # Clone the repository
@@ -143,10 +144,52 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
-### Build for Production
+### Backend Setup ⭐ NEW
 
 ```bash
+# Navigate to backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your PostgreSQL connection string
+
+# Generate Prisma Client
+npm run prisma:generate
+
+# Run database migrations
+npm run prisma:migrate
+
+# (Optional) Seed database with sample data
+npm run prisma:seed
+
+# Start backend server
+npm run dev
+```
+
+Backend runs at [http://localhost:4000](http://localhost:4000)
+
+Check health: [http://localhost:4000/health](http://localhost:4000/health)
+
+### Build for Production
+
+**Frontend:**
+```bash
 # Create optimized production build
+npm run build
+
+# Start production server
+npm start
+```
+
+**Backend:**
+```bash
+cd backend
+
+# Build TypeScript
 npm run build
 
 # Start production server
@@ -201,6 +244,27 @@ Strategy_Guru/
 │       ├── sources/            # Data sources
 │       ├── integrations/       # Third-party integrations
 │       └── settings/           # System settings
+├── backend/                     # Backend API ⭐ NEW
+│   ├── src/
+│   │   ├── server.ts           # Fastify server entry point
+│   │   ├── routes/             # API route handlers
+│   │   │   ├── objectives.ts  # /api/objectives endpoints
+│   │   │   ├── metrics.ts     # /api/metrics endpoints
+│   │   │   ├── feedback.ts    # /api/feedback endpoints
+│   │   │   ├── competitors.ts # /api/competitors endpoints
+│   │   │   ├── roadmap.ts     # /api/roadmap endpoints
+│   │   │   ├── reports.ts     # /api/reports endpoints
+│   │   │   ├── projects.ts    # /api/projects endpoints
+│   │   │   └── alerts.ts      # /api/alerts endpoints
+│   │   └── controllers/        # Business logic controllers
+│   │       ├── objectivesController.ts
+│   │       ├── metricsController.ts
+│   │       └── ... (8 total controllers)
+│   ├── prisma/
+│   │   └── schema.prisma      # Database schema (18 models)
+│   ├── package.json           # Backend dependencies
+│   ├── tsconfig.json          # TypeScript config
+│   └── .env                   # Environment variables
 ├── components/                  # React components
 │   ├── ui/                     # UI component library
 │   │   ├── button.tsx          # Button component
