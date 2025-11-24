@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../server';
+import { dbHelpers } from '../db';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 // Validation schemas
 const createObjectiveSchema = z.object({
@@ -28,21 +29,7 @@ export const getAllObjectives = async (
   reply: FastifyReply
 ) => {
   try {
-    const objectives = await prisma.objective.findMany({
-      include: {
-        keyResults: true,
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const objectives = dbHelpers.findMany('objectives', 'createdAt DESC');
 
     return reply.send({
       success: true,
@@ -68,19 +55,7 @@ export const getObjective = async (
   try {
     const { id } = request.params;
 
-    const objective = await prisma.objective.findUnique({
-      where: { id },
-      include: {
-        keyResults: true,
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    const objective = dbHelpers.findById('objectives', id);
 
     if (!objective) {
       return reply.status(404).send({
@@ -116,18 +91,9 @@ export const createObjective = async (
   try {
     const validatedData = createObjectiveSchema.parse(request.body);
 
-    const objective = await prisma.objective.create({
-      data: validatedData,
-      include: {
-        keyResults: true,
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+    const objective = dbHelpers.create('objectives', {
+      id: randomUUID(),
+      ...validatedData,
     });
 
     return reply.status(201).send({
@@ -166,20 +132,17 @@ export const updateObjective = async (
     const { id } = request.params;
     const validatedData = updateObjectiveSchema.parse(request.body);
 
-    const objective = await prisma.objective.update({
-      where: { id },
-      data: validatedData,
-      include: {
-        keyResults: true,
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    const objective = dbHelpers.update('objectives', id, validatedData);
+
+    if (!objective) {
+      return reply.status(404).send({
+        success: false,
+        error: {
+          message: 'Objective not found',
+          code: 'NOT_FOUND',
         },
-      },
-    });
+      });
+    }
 
     return reply.send({
       success: true,
@@ -193,16 +156,6 @@ export const updateObjective = async (
           message: 'Validation error',
           code: 'VALIDATION_ERROR',
           details: error.errors,
-        },
-      });
-    }
-
-    if (error.code === 'P2025') {
-      return reply.status(404).send({
-        success: false,
-        error: {
-          message: 'Objective not found',
-          code: 'NOT_FOUND',
         },
       });
     }
@@ -226,25 +179,13 @@ export const deleteObjective = async (
   try {
     const { id } = request.params;
 
-    await prisma.objective.delete({
-      where: { id },
-    });
+    dbHelpers.delete('objectives', id);
 
     return reply.send({
       success: true,
       message: 'Objective deleted successfully',
     });
   } catch (error: any) {
-    if (error.code === 'P2025') {
-      return reply.status(404).send({
-        success: false,
-        error: {
-          message: 'Objective not found',
-          code: 'NOT_FOUND',
-        },
-      });
-    }
-
     request.log.error(error);
     return reply.status(500).send({
       success: false,

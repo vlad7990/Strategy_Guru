@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { config } from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import './db'; // Initialize database connection
 
 // Import routes
 import objectivesRoutes from './routes/objectives';
@@ -16,9 +16,6 @@ import alertsRoutes from './routes/alerts';
 
 // Load environment variables
 config();
-
-// Initialize Prisma Client
-export const prisma = new PrismaClient();
 
 // Create Fastify instance
 const fastify = Fastify({
@@ -53,7 +50,7 @@ fastify.register(projectsRoutes, { prefix: '/api/projects' });
 fastify.register(alertsRoutes, { prefix: '/api/alerts' });
 
 // Error handler
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error, _request, reply) => {
   fastify.log.error(error);
 
   reply.status(error.statusCode || 500).send({
@@ -68,8 +65,6 @@ fastify.setErrorHandler((error, request, reply) => {
 // Start server
 const start = async () => {
   try {
-    // Connect to database
-    await prisma.$connect();
     fastify.log.info('✅ Database connected');
 
     // Start listening
@@ -80,20 +75,8 @@ const start = async () => {
     console.log(`📊 Health check: http://localhost:${port}/health\n`);
   } catch (err) {
     fastify.log.error(err);
-    await prisma.$disconnect();
     process.exit(1);
   }
 };
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
 
 start();

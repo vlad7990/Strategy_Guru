@@ -35,6 +35,11 @@ Thumbs.db
 # Prisma
 prisma/migrations/
 
+# Database
+*.db
+*.db-shm
+*.db-wal
+
 # Testing
 coverage/
 .nyc_output/
