@@ -1,0 +1,399 @@
+# Strategy Guru - AI Coding Rules
+
+## Project Overview
+Strategy Guru is a comprehensive Chief Product Officer and Strategy Platform built with Next.js 16, TypeScript, and Tailwind CSS 4. The platform provides 33 functional pages across 8 main sections for strategic planning, product analytics, customer insights, and business metrics.
+
+## Core Principles
+
+### 1. TypeScript First
+- Always use TypeScript with strict mode enabled
+- Define proper interfaces for all data structures
+- Never use `any` type unless absolutely necessary (prefer `unknown`)
+- Use type guards for runtime type checking
+
+### 2. Component Architecture
+- Use React Server Components by default
+- Add `"use client"` directive only when necessary (state, effects, browser APIs)
+- Extract reusable components to `/components/ui/`
+- Follow the component pattern: Card, Dialog, Button, Input, etc.
+
+### 3. State Management
+- Use Zustand for global state (`store/useStore.ts`)
+- Use React `useState` for local component state
+- Keep state minimal and derived values computed
+- Never mutate state directly
+
+### 4. Styling Standards
+- Use Tailwind CSS 4 with `@import "tailwindcss"` syntax
+- Follow mobile-first responsive design
+- Use CSS variables for theming (see `globals.css`)
+- Prefer utility classes over custom CSS
+- Use `cn()` utility for conditional class merging
+
+### 5. File Organization
+```
+app/                    # Next.js App Router pages
+  [section]/           # Section folders (strategy, customers, etc.)
+    [page]/           # Individual page folders
+      page.tsx        # Page component
+components/            # Shared React components
+  ui/                 # UI component library
+  ai-assistant.tsx    # AI Assistant component
+lib/                  # Utility functions
+store/                # Zustand state management
+types/                # TypeScript type definitions
+```
+
+### 6. Naming Conventions
+- **Files**: Use kebab-case for files (`customer-feedback.tsx`)
+- **Components**: Use PascalCase (`CustomerFeedbackPage`)
+- **Functions**: Use camelCase (`handleCreateOKR`)
+- **Constants**: Use UPPER_SNAKE_CASE (`API_ENDPOINT`)
+- **Types/Interfaces**: Use PascalCase (`Objective`, `KeyResult`)
+
+### 7. Data Fetching (Future)
+- Prepare for backend integration (currently using mock data)
+- Use async/await syntax
+- Handle loading and error states
+- Show user feedback (alerts, toasts)
+
+### 8. Form Handling
+- Always validate required fields
+- Disable submit buttons when form is invalid
+- Reset form state after successful submission
+- Use Dialog component for modal forms
+- Show clear user feedback after actions
+
+### 9. Error Handling
+- Always handle errors gracefully
+- Show user-friendly error messages
+- Log errors for debugging (`console.error`)
+- Never expose technical details to users
+
+### 10. Performance
+- Lazy load heavy components when possible
+- Optimize images with Next.js Image component
+- Minimize bundle size
+- Use React.memo() for expensive renders
+
+## Code Style
+
+### Import Order
+```typescript
+// 1. React and Next.js imports
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+// 2. Third-party libraries
+import { create } from "zustand";
+
+// 3. Internal components
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+// 4. Types
+import type { Objective, KeyResult } from "@/types";
+
+// 5. Utils and constants
+import { cn, formatDate } from "@/lib/utils";
+```
+
+### Component Structure
+```typescript
+"use client"; // Only if needed
+
+import { ... } from "...";
+
+// Types defined outside component
+interface PageProps {
+  params: { id: string };
+}
+
+export default function PageName({ params }: PageProps) {
+  // 1. State hooks
+  const [state, setState] = useState();
+
+  // 2. Store hooks
+  const { data } = useStore();
+
+  // 3. Effects
+  useEffect(() => {}, []);
+
+  // 4. Handlers
+  const handleAction = () => {};
+
+  // 5. Computed values
+  const filtered = data.filter(...);
+
+  // 6. Render helpers
+  const renderItem = (item) => <div>{item}</div>;
+
+  // 7. JSX return
+  return <div>...</div>;
+}
+```
+
+### Dialog/Form Pattern
+```typescript
+const [showDialog, setShowDialog] = useState(false);
+const [formData, setFormData] = useState({ field: "" });
+
+const handleSubmit = () => {
+  console.log("Submitting:", formData);
+  alert("Success message!");
+  setShowDialog(false);
+  setFormData({ field: "" }); // Reset form
+};
+
+return (
+  <>
+    <Button onClick={() => setShowDialog(true)}>Open</Button>
+
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Title</DialogTitle>
+          <DialogDescription>Description</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <Input
+            value={formData.field}
+            onChange={(e) => setFormData({...formData, field: e.target.value})}
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!formData.field}>
+            Submit
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>
+);
+```
+
+### AI Assistant Integration
+```typescript
+// Always add at the end of the page, before closing div
+<AIAssistant context="okr" /> {/* or analytics, feedback, reports, etc. */}
+```
+
+## Data Patterns
+
+### Mock Data Structure
+All mock data is in `store/useStore.ts`. When adding new data:
+```typescript
+interface NewEntity {
+  id: string;
+  name: string;
+  createdAt: Date;
+  // ... other fields
+}
+
+// In store
+const mockNewEntities: NewEntity[] = [
+  { id: "1", name: "Example", createdAt: new Date() },
+];
+```
+
+### Type Definitions
+All types are in `types/index.ts`:
+```typescript
+export interface NewType {
+  id: string;
+  requiredField: string;
+  optionalField?: string;
+  arrayField: string[];
+  dateField: Date;
+  enumField: "option1" | "option2";
+}
+```
+
+## UI Component Usage
+
+### Card
+```typescript
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+    <CardDescription>Description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    Content here
+  </CardContent>
+</Card>
+```
+
+### Button Variants
+- `default` - Primary blue button
+- `destructive` - Red delete/danger button
+- `outline` - Outlined button
+- `secondary` - Gray button
+- `ghost` - Transparent button
+- `link` - Link styled button
+
+### Badge Variants
+- `default` - Blue badge
+- `secondary` - Gray badge
+- `destructive` - Red badge
+- `success` - Green badge
+- `warning` - Yellow badge
+- `outline` - Outlined badge
+
+## Charts (Recharts)
+
+### Common Pattern
+```typescript
+<ResponsiveContainer width="100%" height={350}>
+  <LineChart data={data}>
+    <CartesianGrid strokeDasharray="3 3" />
+    <XAxis dataKey="name" />
+    <YAxis />
+    <Tooltip />
+    <Legend />
+    <Line type="monotone" dataKey="value" stroke="#3b82f6" />
+  </LineChart>
+</ResponsiveContainer>
+```
+
+### Chart Types Used
+- `LineChart` - Trends over time
+- `BarChart` - Comparisons
+- `AreaChart` - Cumulative data
+- `PieChart` - Distributions
+- `RadarChart` - Multi-dimensional comparisons
+
+## Accessibility
+
+- Always use semantic HTML
+- Add `aria-label` for icon-only buttons
+- Ensure keyboard navigation works
+- Use proper heading hierarchy (h1, h2, h3)
+- Provide alt text for images
+
+## Security
+
+- Never commit API keys or secrets
+- Sanitize user input
+- Validate data on both client and server (future)
+- Use environment variables for configuration
+
+## Testing (Future)
+
+- Write tests for utility functions
+- Test component rendering
+- Test user interactions
+- Mock external dependencies
+
+## Git Commit Messages
+
+Format: `<type>: <description>`
+
+Types:
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation changes
+- `style:` Code style changes
+- `refactor:` Code refactoring
+- `test:` Test changes
+- `chore:` Build/config changes
+
+Example:
+```
+feat: Add OKR creation dialog with form validation
+
+- Created Dialog component for modal forms
+- Added form state management
+- Implemented validation logic
+- Reset form after successful submission
+```
+
+## When Adding New Features
+
+1. **Define Types First** - Add interfaces to `types/index.ts`
+2. **Create UI Components** - Extract reusable parts to `/components/ui/`
+3. **Add Mock Data** - Update `store/useStore.ts` with sample data
+4. **Build Page** - Create page in appropriate `app/[section]/[page]/page.tsx`
+5. **Add Functionality** - Implement handlers, dialogs, forms
+6. **Integrate AI** - Add `<AIAssistant context="..." />` if applicable
+7. **Test Thoroughly** - Check all interactions, responsive design
+8. **Commit** - Use proper commit message format
+
+## Common Utilities
+
+### Date Formatting
+```typescript
+import { formatDate } from "@/lib/utils";
+formatDate(new Date()); // "Jan 24, 2024"
+```
+
+### Currency Formatting
+```typescript
+import { formatCurrency } from "@/lib/utils";
+formatCurrency(1234.56); // "$1,234.56"
+```
+
+### Class Merging
+```typescript
+import { cn } from "@/lib/utils";
+cn("base-class", condition && "conditional-class"); // Merges classes
+```
+
+## AI Assistant Contexts
+
+Available contexts for AI Assistant:
+- `okr` - OKR creation and analysis
+- `analytics` - Performance insights
+- `feedback` - Customer feedback analysis
+- `reports` - Report generation
+- `competitive` - Competitive intelligence
+- `roadmap` - Roadmap planning
+- `general` - General assistance
+
+## Future Backend Integration
+
+When adding backend:
+1. Keep all API calls in separate service files (`/lib/api/`)
+2. Use environment variables for API URLs
+3. Add proper error handling
+4. Show loading states
+5. Update types to match backend responses
+6. Remove mock data gradually
+7. Add data persistence
+8. Implement real AI integration with OpenAI
+
+## Questions to Ask Yourself
+
+Before writing code:
+- Is this component reusable? → Extract to `/components/ui/`
+- Does this need client interactivity? → Add `"use client"`
+- Is there similar code elsewhere? → Create a shared utility
+- Will this work on mobile? → Test responsive design
+- Is this type-safe? → Add proper TypeScript types
+- Can users understand errors? → Add clear error messages
+- Is this accessible? → Check keyboard navigation and screen readers
+
+## Remember
+
+- **Mobile-first**: Design for mobile, enhance for desktop
+- **Type-safe**: TypeScript catches errors early
+- **User feedback**: Always show confirmation/error messages
+- **Consistency**: Follow existing patterns in the codebase
+- **Documentation**: Update docs when adding major features
+- **Performance**: Optimize for speed and bundle size
+- **Accessibility**: Make it usable for everyone
+- **Future-ready**: Write code that's easy to extend and maintain
+
+## Getting Help
+
+- Check existing components in `/components/ui/` for patterns
+- Review similar pages for implementation examples
+- Refer to Next.js 16 App Router documentation
+- Consult Tailwind CSS 4 documentation
+- Review Recharts documentation for chart examples
+- Check Zustand documentation for state management
