@@ -1,14 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config, { isServer }) => {
-    // Exclude backend folder from webpack compilation
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: ['**/backend/**', '**/node_modules/**'],
-    };
-    return config;
-  },
+  // Turbopack configuration (Next.js 16 default)
+  turbopack: {},
 };
 
 module.exports = nextConfig;
