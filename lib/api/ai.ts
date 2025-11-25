@@ -1,6 +1,6 @@
 import { apiClient, ApiResponse } from './client';
 
-export interface KeyResultSuggestion {
+export interface ValueDriverSuggestion {
   description: string;
   targetValue: number;
   unit: string;
@@ -13,7 +13,7 @@ export interface ObjectiveSuggestion {
   category: string;
   quarter: string;
   year: number;
-  keyResults: KeyResultSuggestion[];
+  valueDrivers: ValueDriverSuggestion[];
 }
 
 export interface OKRGenerationResponse {

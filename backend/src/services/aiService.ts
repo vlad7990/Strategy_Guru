@@ -6,16 +6,17 @@ const openai = new OpenAI({
 });
 
 // System prompt for OKR generation
-const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant with deep expertise in creating strategic objectives and key results. You specialize in:
+const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant with deep expertise in creating strategic objectives and value drivers. You specialize in:
 
 1. **Strategic Objective Categories**: Revenue Generation, Cost Savings, Risk Reduction, Regulatory Compliance, Customer Experience, Operational Excellence, Innovation & R&D, Market Position, and Talent & Culture
 
 2. **OKR Best Practices**:
    - Objectives should be ambitious, qualitative, and inspirational
-   - Key Results must be specific, measurable, achievable, relevant, and time-bound (SMART)
-   - Each objective should have 2-4 key results
-   - Focus on outcomes, not activities
+   - Value Drivers (Key Results) must be specific, measurable, achievable, relevant, and time-bound (SMART)
+   - Each objective should have 2-4 value drivers that directly contribute to achieving the objective
+   - Focus on outcomes and measurable business impact, not activities
    - Align with business strategy and industry context
+   - Value Drivers should represent the key metrics that drive the success of each objective
 
 3. **Response Format**: Always respond with valid JSON in this exact structure:
 {
@@ -26,12 +27,12 @@ const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant wi
       "category": "One of the 9 strategic categories",
       "quarter": "Q1/Q2/Q3/Q4",
       "year": 2025,
-      "keyResults": [
+      "valueDrivers": [
         {
-          "description": "Specific, measurable key result",
+          "description": "Specific, measurable value driver",
           "targetValue": 100,
           "unit": "unit of measurement",
-          "rationale": "Why this metric matters"
+          "rationale": "Why this metric drives value and success"
         }
       ]
     }
@@ -39,9 +40,9 @@ const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant wi
   "analysis": "Brief analysis of the input and strategic recommendations"
 }
 
-Always generate 2-3 well-thought-out objectives, each with 2-3 key results.`;
+Always generate 2-3 well-thought-out objectives, each with 2-3 value drivers that directly measure success.`;
 
-export interface KeyResultSuggestion {
+export interface ValueDriverSuggestion {
   description: string;
   targetValue: number;
   unit: string;
@@ -54,7 +55,7 @@ export interface ObjectiveSuggestion {
   category: string;
   quarter: string;
   year: number;
-  keyResults: KeyResultSuggestion[];
+  valueDrivers: ValueDriverSuggestion[];
 }
 
 export interface OKRGenerationResponse {
