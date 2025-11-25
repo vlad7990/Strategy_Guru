@@ -13,6 +13,7 @@ import roadmapRoutes from './routes/roadmap';
 import reportsRoutes from './routes/reports';
 import projectsRoutes from './routes/projects';
 import alertsRoutes from './routes/alerts';
+import aiRoutes from './routes/ai';
 
 // Load environment variables
 config();
@@ -48,6 +49,7 @@ fastify.register(roadmapRoutes, { prefix: '/api/roadmap' });
 fastify.register(reportsRoutes, { prefix: '/api/reports' });
 fastify.register(projectsRoutes, { prefix: '/api/projects' });
 fastify.register(alertsRoutes, { prefix: '/api/alerts' });
+fastify.register(aiRoutes, { prefix: '/api/ai' });
 
 // Error handler
 fastify.setErrorHandler((error, _request, reply) => {

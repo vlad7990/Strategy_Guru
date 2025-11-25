@@ -12,3 +12,4 @@ export { roadmapApi } from './roadmap';
 export { reportsApi } from './reports';
 export { projectsApi } from './projects';
 export { alertsApi } from './alerts';
+export { aiApi, type ObjectiveSuggestion, type KeyResultSuggestion, type OKRGenerationResponse, type ChatMessage } from './ai';
