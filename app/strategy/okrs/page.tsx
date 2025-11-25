@@ -8,19 +8,27 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { AIAssistant } from "@/components/ai-assistant";
-import { Target, Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit, Trash2 } from "lucide-react";
+import { EnhancedAIAssistant } from "@/components/enhanced-ai-assistant";
+import { AIObjectiveGenerator } from "@/components/ai-okr-generator";
+import { OKRPlaybook } from "@/components/okr-playbook";
+import { DocumentUploadOKR } from "@/components/document-upload-okr";
+import { Target, Plus, TrendingUp, AlertTriangle, CheckCircle2, Edit, Trash2, Sparkles, BookOpen, Upload, Wand2 } from "lucide-react";
+import { STRATEGIC_CATEGORIES } from "@/lib/constants/strategic-categories";
+import type { ObjectiveSuggestion } from "@/lib/api";
 
 export default function OKRsPage() {
   const { objectives } = useStore();
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showPlaybook, setShowPlaybook] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [selectedOKR, setSelectedOKR] = useState<typeof objectives[0] | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     quarter: "Q1",
-    year: 2024,
+    year: 2025,
     category: "",
   });
 
@@ -54,12 +62,22 @@ export default function OKRsPage() {
     }
   };
 
+  const getCategoryIcon = (categoryId: string) => {
+    const category = STRATEGIC_CATEGORIES.find(c => c.id === categoryId || c.name === categoryId);
+    return category?.icon || '🎯';
+  };
+
   const handleCreateOKR = () => {
     console.log("Creating OKR:", formData);
-    // In a real app, this would call an API to create the OKR
     alert(`OKR "${formData.title}" created successfully!`);
     setShowNewDialog(false);
-    setFormData({ title: "", description: "", quarter: "Q1", year: 2024, category: "" });
+    setFormData({ title: "", description: "", quarter: "Q1", year: 2025, category: "" });
+  };
+
+  const handleAcceptAIObjectives = (suggestions: ObjectiveSuggestion[]) => {
+    console.log("Accepting AI-generated objectives:", suggestions);
+    // Here you would normally save these to your backend
+    alert(`Created ${suggestions.length} objectives with AI!\n\nThese will be saved to your database in the next update.`);
   };
 
   const handleEditOKR = (okr: typeof objectives[0]) => {
@@ -90,18 +108,104 @@ export default function OKRsPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header with AI Actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">OKRs & Goals</h1>
           <p className="text-gray-500 mt-2">
-            Track and manage objectives and key results
+            Create strategic objectives with AI-powered assistance
           </p>
         </div>
-        <Button onClick={() => setShowNewDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Objective
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowPlaybook(true)}
+            className="gap-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            Playbook
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowDocumentUpload(true)}
+            className="gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Upload Document
+          </Button>
+          <Button
+            onClick={() => setShowAIGenerator(true)}
+            className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            <Wand2 className="h-4 w-4" />
+            AI Generate
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowNewDialog(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Manual Create
+          </Button>
+        </div>
+      </div>
+
+      {/* AI Feature Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card
+          className="border-blue-200 bg-gradient-to-br from-blue-50 to-purple-50 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setShowAIGenerator(true)}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">AI Strategy Guru</CardTitle>
+            <Sparkles className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-700">
+              Transform your vision into structured OKRs with measurable value drivers
+            </div>
+            <Button variant="ghost" className="mt-2 p-0 h-auto text-blue-600 hover:text-blue-700">
+              Try it now →
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setShowDocumentUpload(true)}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Document Upload</CardTitle>
+            <Upload className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-700">
+              Upload strategy documents and extract OKRs automatically
+            </div>
+            <Button variant="ghost" className="mt-2 p-0 h-auto text-purple-600 hover:text-purple-700">
+              Upload document →
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="border-green-200 bg-gradient-to-br from-green-50 to-teal-50 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setShowPlaybook(true)}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">OKR Playbook</CardTitle>
+            <BookOpen className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-700">
+              Learn best practices, see examples, and master OKR creation
+            </div>
+            <Button variant="ghost" className="mt-2 p-0 h-auto text-green-600 hover:text-green-700">
+              Learn more →
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Summary Stats */}
@@ -152,6 +256,7 @@ export default function OKRsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
+                    <span className="text-2xl">{getCategoryIcon(objective.category)}</span>
                     <CardTitle>{objective.title}</CardTitle>
                     <Badge
                       className={getStatusColor(objective.status)}
@@ -209,7 +314,7 @@ export default function OKRsPage() {
 
               <div className="space-y-4">
                 <h4 className="font-semibold text-sm text-gray-900">
-                  Key Results
+                  Value Drivers
                 </h4>
                 {objective.keyResults.map((kr) => (
                   <div key={kr.id} className="border-l-2 border-gray-200 pl-4">
@@ -249,16 +354,40 @@ export default function OKRsPage() {
         ))}
       </div>
 
-      {/* AI Assistant */}
-      <AIAssistant context="okr" />
+      {/* Enhanced AI Assistant */}
+      <EnhancedAIAssistant
+        context="OKR Planning & Strategy"
+        onGenerateOKR={() => setShowAIGenerator(true)}
+        onOpenPlaybook={() => setShowPlaybook(true)}
+      />
 
-      {/* New OKR Dialog */}
+      {/* AI OKR Generator */}
+      <AIObjectiveGenerator
+        open={showAIGenerator}
+        onOpenChange={setShowAIGenerator}
+        onAccept={handleAcceptAIObjectives}
+      />
+
+      {/* OKR Playbook */}
+      <OKRPlaybook
+        open={showPlaybook}
+        onOpenChange={setShowPlaybook}
+      />
+
+      {/* Document Upload */}
+      <DocumentUploadOKR
+        open={showDocumentUpload}
+        onOpenChange={setShowDocumentUpload}
+        onAccept={handleAcceptAIObjectives}
+      />
+
+      {/* Manual Create Dialog */}
       <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New OKR</DialogTitle>
             <DialogDescription>
-              Define a new objective and key results for your team
+              Define a new objective and value drivers for your team
             </DialogDescription>
           </DialogHeader>
 
@@ -310,18 +439,18 @@ export default function OKRsPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Category</label>
+              <label className="text-sm font-medium text-gray-700">Strategic Category</label>
               <select
                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
                 <option value="">Select category</option>
-                <option value="Growth">Growth</option>
-                <option value="Technology">Technology</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Product">Product</option>
-                <option value="Customer">Customer</option>
+                {STRATEGIC_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -367,17 +496,17 @@ export default function OKRsPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Category</label>
+              <label className="text-sm font-medium text-gray-700">Strategic Category</label>
               <select
                 className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
-                <option value="Growth">Growth</option>
-                <option value="Technology">Technology</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Product">Product</option>
-                <option value="Customer">Customer</option>
+                {STRATEGIC_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
