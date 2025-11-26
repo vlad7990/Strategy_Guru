@@ -5,34 +5,34 @@ const nextConfig = {
   // Turbopack configuration (Next.js 16 default)
   turbopack: {},
 
-  // Exclude backend directory from Next.js file tracing
+  // Exclude _backend directory from Next.js file tracing
   experimental: {
     outputFileTracingExcludes: {
-      '*': ['./backend/**/*', 'backend/**/*', './backend'],
+      '*': ['./_backend/**/*', '_backend/**/*', './_backend'],
     },
   },
 
-  // Webpack configuration to exclude backend files
+  // Webpack configuration to exclude _backend files
   webpack: (config, { isServer }) => {
-    // Add rule to ignore backend directory
+    // Add rule to ignore _backend directory
     config.module.rules.push({
-      test: /backend[\/\\].*\.(ts|tsx|js|jsx)$/,
+      test: /_backend[\/\\].*\.(ts|tsx|js|jsx)$/,
       loader: 'ignore-loader',
     });
 
-    // Exclude backend from module resolution
+    // Exclude _backend from module resolution
     if (config.externals) {
       if (typeof config.externals === 'function') {
         const originalExternals = config.externals;
         config.externals = async (context, request, callback) => {
-          if (request.includes('/backend/') || request.startsWith('backend/')) {
+          if (request.includes('/_backend/') || request.startsWith('_backend/')) {
             return callback();
           }
           return originalExternals(context, request, callback);
         };
       } else if (Array.isArray(config.externals)) {
         config.externals.push(function ({ request }, callback) {
-          if (request && (request.includes('/backend/') || request.startsWith('backend/'))) {
+          if (request && (request.includes('/_backend/') || request.startsWith('_backend/'))) {
             return callback();
           }
           callback();
