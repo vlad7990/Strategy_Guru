@@ -6,25 +6,40 @@ const openai = new OpenAI({
 });
 
 // System prompt for OKR generation
-const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant with deep expertise in creating strategic objectives and value drivers. You specialize in:
+const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant with deep expertise in creating strategic objectives and value drivers across organizational levels. You specialize in:
 
-1. **Strategic Objective Categories**: Revenue Generation, Cost Savings, Risk Reduction, Regulatory Compliance, Customer Experience, Operational Excellence, Innovation & R&D, Market Position, and Talent & Culture
+1. **Organizational OKR Levels**:
+   - **Business Strategy Level** (CEO/Executive): 3-year vision with annual milestones, focused on market position, stakeholder value, and competitive advantage
+   - **Enterprise Level** (Cross-functional): Annual objectives with quarterly milestones, focused on operational excellence and organizational capabilities
+   - **Department Level** (Functional teams): Quarterly objectives with monthly reviews, focused on team performance and direct deliverables
 
-2. **OKR Best Practices**:
+2. **Strategic Objective Categories**: Revenue Generation, Cost Savings, Risk Reduction, Regulatory Compliance, Customer Experience, Operational Excellence, Innovation & R&D, Market Position, and Talent & Culture
+
+3. **Core OKR Principles**:
+   - **Transparency**: All OKRs visible across the organization for alignment and collaboration
+   - **Ambitious Goals**: Aim for 70% achievement - OKRs should stretch teams beyond comfort zones
+   - **3-5 Value Drivers**: Each objective must have 3-5 measurable value drivers (key results)
+   - **Frequent Check-ins**: Regular reviews (weekly/bi-weekly) to track progress and adjust course
+   - **Bottom-up & Top-down**: Combine strategic direction from leadership with tactical insights from teams
+   - **Outcome-focused**: Focus on outcomes and business impact, not activities or outputs
+
+4. **OKR Best Practices**:
    - Objectives should be ambitious, qualitative, and inspirational
    - Value Drivers (Key Results) must be specific, measurable, achievable, relevant, and time-bound (SMART)
-   - Each objective should have 2-4 value drivers that directly contribute to achieving the objective
+   - Each objective should have 3-5 value drivers that directly contribute to achieving the objective
    - Focus on outcomes and measurable business impact, not activities
-   - Align with business strategy and industry context
+   - Align with business strategy, organizational level, and industry context
    - Value Drivers should represent the key metrics that drive the success of each objective
+   - Ensure cascading alignment: Department OKRs support Enterprise OKRs, Enterprise OKRs support Business Strategy OKRs
 
-3. **Response Format**: Always respond with valid JSON in this exact structure:
+5. **Response Format**: Always respond with valid JSON in this exact structure:
 {
   "objectives": [
     {
       "title": "Clear, ambitious objective",
       "description": "Why this matters and its strategic impact",
       "category": "One of the 9 strategic categories",
+      "level": "business-strategy/enterprise/department",
       "quarter": "Q1/Q2/Q3/Q4",
       "year": 2025,
       "valueDrivers": [
@@ -40,7 +55,7 @@ const OKR_SYSTEM_PROMPT = `You are an expert Strategy Guru and OKR consultant wi
   "analysis": "Brief analysis of the input and strategic recommendations"
 }
 
-Always generate 2-3 well-thought-out objectives, each with 2-3 value drivers that directly measure success.`;
+Always generate 2-3 well-thought-out objectives, each with 3-5 value drivers that directly measure success. Ensure value drivers are appropriate for the organizational level.`;
 
 export interface ValueDriverSuggestion {
   description: string;
@@ -53,6 +68,7 @@ export interface ObjectiveSuggestion {
   title: string;
   description: string;
   category: string;
+  level?: 'business-strategy' | 'enterprise' | 'department';
   quarter: string;
   year: number;
   valueDrivers: ValueDriverSuggestion[];
@@ -72,18 +88,31 @@ export async function generateOKRsFromText(
     industry?: string;
     companySize?: string;
     currentQuarter?: string;
+    organizationalLevel?: 'business-strategy' | 'enterprise' | 'department';
     existingObjectives?: string[];
   }
 ): Promise<OKRGenerationResponse> {
+  const levelGuidance = context?.organizationalLevel
+    ? `\n- Organizational Level: ${context.organizationalLevel} (${
+        context.organizationalLevel === 'business-strategy'
+          ? 'CEO/Executive - 3-year vision with annual milestones'
+          : context.organizationalLevel === 'enterprise'
+          ? 'Cross-functional - Annual objectives with quarterly milestones'
+          : 'Department/Team - Quarterly objectives with monthly reviews'
+      })`
+    : '';
+
   const contextInfo = context
-    ? `\n\nContext:\n- Industry: ${context.industry || 'Not specified'}\n- Company Size: ${context.companySize || 'Not specified'}\n- Current Quarter: ${context.currentQuarter || 'Q1 2025'}\n- Existing Objectives: ${context.existingObjectives?.join(', ') || 'None'}`
+    ? `\n\nContext:\n- Industry: ${context.industry || 'Not specified'}\n- Company Size: ${context.companySize || 'Not specified'}\n- Current Quarter: ${context.currentQuarter || 'Q1 2025'}${levelGuidance}\n- Existing Objectives: ${context.existingObjectives?.join(', ') || 'None'}`
     : '';
 
   const userPrompt = `Based on the following input, create 2-3 strategic OKRs that follow best practices and align with enterprise strategic categories:
 
 "${userInput}"${contextInfo}
 
-Generate ambitious yet achievable OKRs with specific, measurable key results. Return only valid JSON following the specified format.`;
+Generate ambitious yet achievable OKRs with 3-5 specific, measurable value drivers each. Ensure the OKRs are appropriate for the specified organizational level${
+    context?.organizationalLevel ? ` (${context.organizationalLevel})` : ''
+  }. Return only valid JSON following the specified format.`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -115,17 +144,30 @@ export async function generateOKRsFromDocument(
   context?: {
     industry?: string;
     companySize?: string;
+    organizationalLevel?: 'business-strategy' | 'enterprise' | 'department';
   }
 ): Promise<OKRGenerationResponse> {
+  const levelGuidance = context?.organizationalLevel
+    ? `\n- Organizational Level: ${context.organizationalLevel} (${
+        context.organizationalLevel === 'business-strategy'
+          ? 'CEO/Executive - 3-year vision with annual milestones'
+          : context.organizationalLevel === 'enterprise'
+          ? 'Cross-functional - Annual objectives with quarterly milestones'
+          : 'Department/Team - Quarterly objectives with monthly reviews'
+      })`
+    : '';
+
   const contextInfo = context
-    ? `\n\nContext:\n- Industry: ${context.industry || 'Not specified'}\n- Company Size: ${context.companySize || 'Not specified'}`
+    ? `\n\nContext:\n- Industry: ${context.industry || 'Not specified'}\n- Company Size: ${context.companySize || 'Not specified'}${levelGuidance}`
     : '';
 
   const userPrompt = `Analyze the following strategy document and extract 2-3 key strategic OKRs that capture the essence of the strategy:
 
 ${documentText}${contextInfo}
 
-Transform the strategic goals into concrete, measurable OKRs following best practices. Return only valid JSON following the specified format.`;
+Transform the strategic goals into concrete, measurable OKRs with 3-5 value drivers each. Ensure OKRs are appropriate for the organizational level${
+    context?.organizationalLevel ? ` (${context.organizationalLevel})` : ''
+  }. Return only valid JSON following the specified format.`;
 
   try {
     const completion = await openai.chat.completions.create({

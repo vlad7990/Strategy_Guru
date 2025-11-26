@@ -11,6 +11,7 @@ export interface ObjectiveSuggestion {
   title: string;
   description: string;
   category: string;
+  level?: 'business-strategy' | 'enterprise' | 'department';
   quarter: string;
   year: number;
   valueDrivers: ValueDriverSuggestion[];
@@ -36,6 +37,7 @@ export const aiApi = {
       industry?: string;
       companySize?: string;
       currentQuarter?: string;
+      organizationalLevel?: 'business-strategy' | 'enterprise' | 'department';
       existingObjectives?: string[];
     }
   ): Promise<ApiResponse<OKRGenerationResponse>> => {
@@ -53,6 +55,7 @@ export const aiApi = {
     context?: {
       industry?: string;
       companySize?: string;
+      organizationalLevel?: 'business-strategy' | 'enterprise' | 'department';
     }
   ): Promise<ApiResponse<OKRGenerationResponse>> => {
     return apiClient.post<OKRGenerationResponse>('/api/ai/generate-from-document', {

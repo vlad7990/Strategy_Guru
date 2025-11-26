@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Sparkles, Wand2, CheckCircle2, ArrowRight, Upload, MessageSquare, Loader2 } from "lucide-react";
+import { Sparkles, Wand2, CheckCircle2, ArrowRight, Upload, MessageSquare, Loader2, Building2 } from "lucide-react";
 import { aiApi, type ObjectiveSuggestion } from "@/lib/api";
-import { STRATEGIC_CATEGORIES } from "@/lib/constants/strategic-categories";
+import { STRATEGIC_CATEGORIES, OKR_LEVELS } from "@/lib/constants/strategic-categories";
 
 interface AIObjectiveSuggestion extends ObjectiveSuggestion {
   selected?: boolean;
@@ -29,6 +29,7 @@ export function AIObjectiveGenerator({ open, onOpenChange, onAccept }: AIGenerat
     industry: "",
     companySize: "",
     currentQuarter: "Q1 2025",
+    organizationalLevel: "" as '' | 'business-strategy' | 'enterprise' | 'department',
   });
   const [suggestions, setSuggestions] = useState<AIObjectiveSuggestion[]>([]);
   const [analysis, setAnalysis] = useState("");
@@ -48,6 +49,7 @@ export function AIObjectiveGenerator({ open, onOpenChange, onAccept }: AIGenerat
         industry: context.industry || undefined,
         companySize: context.companySize || undefined,
         currentQuarter: context.currentQuarter || undefined,
+        organizationalLevel: context.organizationalLevel || undefined,
       });
 
       if (response.success && response.data) {
@@ -83,7 +85,7 @@ export function AIObjectiveGenerator({ open, onOpenChange, onAccept }: AIGenerat
   const handleClose = () => {
     setStep('input');
     setInput("");
-    setContext({ industry: "", companySize: "", currentQuarter: "Q1 2025" });
+    setContext({ industry: "", companySize: "", currentQuarter: "Q1 2025", organizationalLevel: "" });
     setSuggestions([]);
     setAnalysis("");
     setError("");
@@ -135,7 +137,7 @@ export function AIObjectiveGenerator({ open, onOpenChange, onAccept }: AIGenerat
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">
                   Industry (Optional)
@@ -161,6 +163,27 @@ export function AIObjectiveGenerator({ open, onOpenChange, onAccept }: AIGenerat
                   <option value="medium">Medium (201-1000)</option>
                   <option value="large">Large (1000+)</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Organizational Level (Recommended)
+                </label>
+                <select
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={context.organizationalLevel}
+                  onChange={(e) => setContext({ ...context, organizationalLevel: e.target.value as any })}
+                >
+                  <option value="">Select level</option>
+                  {OKR_LEVELS.map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {context.organizationalLevel && OKR_LEVELS.find(l => l.id === context.organizationalLevel)?.timeframe}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">

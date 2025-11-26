@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Target, TrendingUp, AlertCircle, CheckCircle2, ArrowRight, Lightbulb } from "lucide-react";
-import { STRATEGIC_CATEGORIES } from "@/lib/constants/strategic-categories";
+import { BookOpen, Target, TrendingUp, AlertCircle, CheckCircle2, ArrowRight, Lightbulb, Building2, Users, Zap } from "lucide-react";
+import { STRATEGIC_CATEGORIES, OKR_LEVELS, OKR_PRINCIPLES } from "@/lib/constants/strategic-categories";
 
 interface OKRPlaybookProps {
   open: boolean;
@@ -14,10 +14,11 @@ interface OKRPlaybookProps {
 }
 
 export function OKRPlaybook({ open, onOpenChange }: OKRPlaybookProps) {
-  const [activeSection, setActiveSection] = useState<'intro' | 'categories' | 'objectives' | 'drivers' | 'examples' | 'mistakes'>('intro');
+  const [activeSection, setActiveSection] = useState<'intro' | 'levels' | 'categories' | 'objectives' | 'drivers' | 'examples' | 'mistakes'>('intro');
 
   const sections = [
     { id: 'intro' as const, title: 'Introduction', icon: BookOpen },
+    { id: 'levels' as const, title: 'Organizational Levels', icon: Building2 },
     { id: 'categories' as const, title: 'Strategic Categories', icon: Target },
     { id: 'objectives' as const, title: 'Writing Objectives', icon: TrendingUp },
     { id: 'drivers' as const, title: 'Value Drivers', icon: CheckCircle2 },
@@ -120,6 +121,98 @@ export function OKRPlaybook({ open, onOpenChange }: OKRPlaybookProps) {
                   </CardHeader>
                   <CardContent className="text-sm text-gray-700">
                     Use our AI Strategy Guru to automatically generate well-structured OKRs from your strategic vision. It understands your industry context and creates objectives aligned with enterprise strategic categories.
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Organizational Levels */}
+            {activeSection === 'levels' && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900">Organizational OKR Levels</h2>
+                <p className="text-sm text-gray-600">
+                  OKRs cascade through three organizational levels, each with specific focus areas, timeframes, and review cycles.
+                </p>
+
+                <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-purple-50">
+                  <CardHeader>
+                    <CardTitle className="text-base">Core OKR Principles</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-3">
+                      {OKR_PRINCIPLES.map((item, index) => (
+                        <div key={index} className="bg-white rounded-md p-3 border border-blue-200">
+                          <h4 className="font-semibold text-sm text-blue-900">{item.principle}</h4>
+                          <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  {OKR_LEVELS.map((level, index) => {
+                    const icons = [Building2, Users, Zap];
+                    const Icon = icons[index];
+                    const colors = ['blue', 'purple', 'green'];
+                    const color = colors[index];
+
+                    return (
+                      <Card key={index} className={`border-l-4 border-l-${color}-500`}>
+                        <CardHeader className={`bg-${color}-50`}>
+                          <div className="flex items-start gap-3">
+                            <Icon className={`h-6 w-6 text-${color}-600 flex-shrink-0`} />
+                            <div className="flex-1">
+                              <CardTitle className="text-base">{level.name}</CardTitle>
+                              <p className="text-sm text-gray-600 mt-1">{level.description}</p>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white border border-gray-200 rounded-md p-3">
+                              <h5 className="text-xs font-semibold text-gray-700 mb-1">Timeframe</h5>
+                              <p className="text-sm text-gray-900">{level.timeframe}</p>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-md p-3">
+                              <h5 className="text-xs font-semibold text-gray-700 mb-1">Review Cycle</h5>
+                              <p className="text-sm text-gray-900">{level.reviewCycle}</p>
+                            </div>
+                          </div>
+                          <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h5 className="text-xs font-semibold text-gray-700 mb-2">Focus Areas</h5>
+                            <div className="flex flex-wrap gap-2">
+                              {level.focus.map((focusArea, fIndex) => (
+                                <Badge key={fIndex} variant="secondary" className="text-xs">
+                                  {focusArea}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h5 className="text-xs font-semibold text-gray-700 mb-2">Example Roles</h5>
+                            <p className="text-sm text-gray-600">{level.exampleRoles.join(', ')}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-600" />
+                      Cascading Alignment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-700 space-y-2">
+                    <p>
+                      <strong>Bottom-up & Top-down:</strong> Business Strategy OKRs provide direction for Enterprise OKRs, which in turn guide Department OKRs. Teams contribute insights from the ground up to refine strategic objectives.
+                    </p>
+                    <p>
+                      <strong>70% Achievement Target:</strong> OKRs should be ambitious enough that achieving 70% is considered successful. Consistently hitting 100% means you're not setting stretch goals.
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -293,10 +386,10 @@ export function OKRPlaybook({ open, onOpenChange }: OKRPlaybookProps) {
 
                 <Card className="bg-yellow-50 border-yellow-200">
                   <CardHeader>
-                    <CardTitle className="text-sm">💡 Pro Tip: 2-4 Value Drivers per Objective</CardTitle>
+                    <CardTitle className="text-sm">💡 Pro Tip: 3-5 Value Drivers per Objective</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-gray-700">
-                    Each objective should have 2-4 value drivers. Too few means you're not measuring comprehensively; too many creates confusion and dilutes focus.
+                    Each objective should have 3-5 value drivers. Too few means you're not measuring comprehensively; too many creates confusion and dilutes focus. This range provides comprehensive measurement while maintaining clarity.
                   </CardContent>
                 </Card>
               </div>
@@ -305,75 +398,81 @@ export function OKRPlaybook({ open, onOpenChange }: OKRPlaybookProps) {
             {/* Examples */}
             {activeSection === 'examples' && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900">Real-World Examples</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Hierarchical OKR Examples</h2>
+                <p className="text-sm text-gray-600">
+                  See how OKRs cascade through organizational levels, from Business Strategy to Enterprise to Department. Each example shows 3-5 value drivers demonstrating comprehensive measurement.
+                </p>
 
-                <div className="space-y-4">
-                  {[
-                    {
-                      category: 'Revenue Generation',
-                      icon: '💰',
-                      objective: 'Accelerate Enterprise Revenue Growth',
-                      description: 'Expand our enterprise customer base to establish market leadership',
-                      valueDrivers: [
-                        { metric: 'Grow enterprise ARR from $5M to $8M', current: 5, target: 8, unit: 'M ARR' },
-                        { metric: 'Increase enterprise pipeline from 30 to 50 qualified leads', current: 30, target: 50, unit: 'leads' },
-                        { metric: 'Achieve 80% win rate on enterprise deals', current: 65, target: 80, unit: '%' },
-                      ],
-                    },
-                    {
-                      category: 'Customer Experience',
-                      icon: '❤️',
-                      objective: 'Deliver Exceptional Customer Experience',
-                      description: 'Transform customer satisfaction to drive loyalty and retention',
-                      valueDrivers: [
-                        { metric: 'Increase NPS from 42 to 65', current: 42, target: 65, unit: 'NPS' },
-                        { metric: 'Reduce churn rate from 3.2% to 2.0%', current: 3.2, target: 2.0, unit: '%' },
-                        { metric: 'Improve support CSAT from 4.2 to 4.7/5.0', current: 4.2, target: 4.7, unit: '/5.0' },
-                      ],
-                    },
-                    {
-                      category: 'Innovation & R&D',
-                      icon: '🚀',
-                      objective: 'Lead Market with AI-Powered Innovation',
-                      description: 'Differentiate through cutting-edge AI capabilities',
-                      valueDrivers: [
-                        { metric: 'Launch 3 AI-powered features by Q2', current: 0, target: 3, unit: 'features' },
-                        { metric: 'Achieve 50% adoption rate for AI features', current: 0, target: 50, unit: '%' },
-                        { metric: 'Reduce task completion time by 40% with AI', current: 0, target: 40, unit: '% reduction' },
-                      ],
-                    },
-                  ].map((example, index) => (
-                    <Card key={index} className="border-l-4 border-l-blue-500">
-                      <CardHeader className="bg-gray-50">
-                        <div className="flex items-start gap-3">
-                          <span className="text-2xl">{example.icon}</span>
-                          <div className="flex-1">
-                            <Badge variant="outline" className="mb-2">{example.category}</Badge>
-                            <CardTitle className="text-lg">{example.objective}</CardTitle>
-                            <p className="text-sm text-gray-600 mt-1">{example.description}</p>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Value Drivers:</h4>
-                        <div className="space-y-2">
-                          {example.valueDrivers.map((vd, vdIndex) => (
-                            <div key={vdIndex} className="bg-white rounded border border-gray-200 p-3">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900 flex-1">{vd.metric}</p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {vd.current} → {vd.target} {vd.unit}
-                                  </Badge>
+                {/* Revenue Generation Example */}
+                {STRATEGIC_CATEGORIES.slice(0, 3).map((category, catIndex) => {
+                  const levelColors = {
+                    'business-strategy': { border: 'border-l-blue-600', bg: 'bg-blue-50', badge: 'bg-blue-100 text-blue-800' },
+                    'enterprise': { border: 'border-l-purple-600', bg: 'bg-purple-50', badge: 'bg-purple-100 text-purple-800' },
+                    'department': { border: 'border-l-green-600', bg: 'bg-green-50', badge: 'bg-green-100 text-green-800' },
+                  };
+
+                  return (
+                    <div key={catIndex} className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{category.icon}</span>
+                        <h3 className="text-lg font-bold text-gray-900">{category.name}</h3>
+                      </div>
+                      {category.examples.map((example, exIndex) => {
+                        const colors = levelColors[example.level as keyof typeof levelColors];
+                        const levelName = example.level === 'business-strategy' ? 'Business Strategy' :
+                                         example.level === 'enterprise' ? 'Enterprise' : 'Department';
+
+                        return (
+                          <Card key={exIndex} className={`border-l-4 ${colors.border}`}>
+                            <CardHeader className={colors.bg}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge className={colors.badge}>{levelName} Level</Badge>
+                                  </div>
+                                  <CardTitle className="text-base">{example.objective}</CardTitle>
                                 </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                            </CardHeader>
+                            <CardContent className="pt-4">
+                              <h4 className="text-xs font-semibold text-gray-700 mb-2">Value Drivers ({example.valueDrivers.length}):</h4>
+                              <div className="space-y-2">
+                                {example.valueDrivers.map((vd, vdIndex) => (
+                                  <div key={vdIndex} className="bg-white rounded border border-gray-200 p-2">
+                                    <div className="flex items-start gap-2">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                      <p className="text-sm text-gray-900 flex-1">{vd}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+
+                <Card className="bg-yellow-50 border-yellow-200">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-yellow-600" />
+                      Notice the Cascade
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-700 space-y-2">
+                    <p>
+                      <strong>Business Strategy Level:</strong> Long-term vision (3-year) with broad market impact and stakeholder value. Value drivers focus on major business transformation.
+                    </p>
+                    <p>
+                      <strong>Enterprise Level:</strong> Cross-functional initiatives (annual with quarterly milestones) that deliver on strategic goals. Value drivers show organizational capability improvements.
+                    </p>
+                    <p>
+                      <strong>Department Level:</strong> Team-specific quarterly objectives that directly contribute to enterprise goals. Value drivers are operational and directly actionable.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
