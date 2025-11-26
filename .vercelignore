@@ -1,2 +1,5 @@
 # Exclude backend from Vercel deployment
 backend/
+backend/**/*
+./backend/
+./backend/**/*
