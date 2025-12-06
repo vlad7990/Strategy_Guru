@@ -14,6 +14,7 @@ import reportsRoutes from './routes/reports';
 import projectsRoutes from './routes/projects';
 import alertsRoutes from './routes/alerts';
 import aiRoutes from './routes/ai';
+import storiesRoutes from './routes/stories';
 
 // Load environment variables
 config();
@@ -50,6 +51,9 @@ fastify.register(reportsRoutes, { prefix: '/api/reports' });
 fastify.register(projectsRoutes, { prefix: '/api/projects' });
 fastify.register(alertsRoutes, { prefix: '/api/alerts' });
 fastify.register(aiRoutes, { prefix: '/api/ai' });
+
+// AI Children's Story Platform Routes
+fastify.register(storiesRoutes, { prefix: '/api/stories' });
 
 // Error handler
 fastify.setErrorHandler((error, _request, reply) => {

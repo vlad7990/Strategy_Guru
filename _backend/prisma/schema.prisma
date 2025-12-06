@@ -1,5 +1,5 @@
-// This is your Prisma schema file
-// Learn more: https://pris.ly/d/prisma-schema
+// AI Children's Story Publishing Platform - Database Schema
+// Complete enterprise-grade schema for child-safe story creation
 
 generator client {
   provider = "prisma-client-js"
@@ -11,339 +11,867 @@ datasource db {
 }
 
 // ============================================
-// USER & AUTHENTICATION
+// USERS & AUTHENTICATION
 // ============================================
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String   // Hashed
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String       @id @default(uuid())
+  email         String       @unique
+  name          String
+  password      String       // Hashed
+  role          UserRole     @default(PARENT)
+  emailVerified Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   // Relations
-  objectives  Objective[]
-  metrics     Metric[]
-  feedback    CustomerFeedback[]
-  projects    Project[]
-  teamMembers TeamMember[]
+  children           Child[]
+  parentProfile      ParentProfile?
+  teacherProfile     TeacherProfile?
+  creatorProfile     CreatorProfile?
+  stories            Story[]              @relation("StoryAuthor")
+  ownedCharacters    Character[]          @relation("CharacterOwner")
+  ownedWorlds        World[]              @relation("WorldOwner")
+  marketplaceListings MarketplaceListing[]
+  purchases          Purchase[]
+  transactions       Transaction[]
+  safetyReports      SafetyReport[]
 
   @@map("users")
 }
 
 enum UserRole {
+  PARENT
+  CHILD
+  TEACHER
+  CREATOR
   ADMIN
-  PRODUCT_OWNER
-  USER
-  VIEWER
 }
 
-// ============================================
-// STRATEGY & OKRS
-// ============================================
-
-model Objective {
+model Child {
   id          String   @id @default(uuid())
-  title       String
-  description String
-  quarter     String
-  year        Int
-  category    String
-  status      String   @default("active")
-  progress    Float    @default(0)
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id])
+  name        String
+  dateOfBirth DateTime
+  avatarUrl   String?
+  parentId    String
+  parent      User     @relation(fields: [parentId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  keyResults KeyResult[]
+  stories            Story[]              @relation("ChildStories")
+  favoriteCharacters FavoriteCharacter[]
+  favoriteWorlds     FavoriteWorld[]
+  readingHistory     ReadingHistory[]
+  emotionalData      EmotionalData[]
+  preferences        ChildPreferences?
 
-  @@map("objectives")
+  @@map("children")
 }
 
-model KeyResult {
+model ParentProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber         String?
+  notificationPrefs   Json     // Email, SMS, push preferences
+  contentFilterLevel  String   @default("moderate") // "strict" | "moderate" | "relaxed"
+  anxietySlider       Int      @default(5) // 1-10 scale for emotional intensity
+  educationalFocus    String[] // ["literacy", "sel", "stem", "creativity"]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("parent_profiles")
+}
+
+model TeacherProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolName      String
+  gradeLevel      String[] // ["K", "1", "2", "3", etc.]
+  subjects        String[] // Subject areas
+  certifications  String[] // Teaching certifications
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  classrooms Classroom[]
+
+  @@map("teacher_profiles")
+}
+
+model CreatorProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName       String
+  bio               String?
+  portfolioUrl      String?
+  verified          Boolean  @default(false)
+  totalSales        Float    @default(0)
+  totalEarnings     Float    @default(0)
+  rating            Float    @default(0)
+  reviewCount       Int      @default(0)
+  paymentMethod     String?  // Stripe account info
+  taxInfo           Json?    // Tax documentation
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("creator_profiles")
+}
+
+model ChildPreferences {
+  id                    String   @id @default(uuid())
+  childId               String   @unique
+  child                 Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  favoriteGenres        String[] // ["adventure", "fantasy", "animals", "space", etc.]
+  favoriteThemes        String[] // ["friendship", "courage", "kindness", etc.]
+  preferredAgeLevel     String   @default("age-appropriate") // Age customization
+  preferredLength       String   @default("medium") // "short" | "medium" | "long"
+  voicePreference       String   @default("gentle") // Voice style
+  ambientSoundEnabled   Boolean  @default(true)
+  autoplayEnabled       Boolean  @default(false)
+  dyslexiaFriendly      Boolean  @default(false)
+  autismFriendly        Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("child_preferences")
+}
+
+// ============================================
+// STORIES & CONTENT
+// ============================================
+
+model Story {
+  id                  String        @id @default(uuid())
+  title               String
+  description         String
+  ageRange            String        // "3-5" | "6-8" | "9-12"
+  genre               String[]      // ["adventure", "fantasy", etc.]
+  status              StoryStatus   @default(DRAFT)
+  visibility          Visibility    @default(PRIVATE)
+  authorId            String
+  author              User          @relation("StoryAuthor", fields: [authorId], references: [id])
+  childId             String?
+  child               Child?        @relation("ChildStories", fields: [childId], references: [id])
+  worldId             String?
+  world               World?        @relation(fields: [worldId], references: [id])
+  isPublished         Boolean       @default(false)
+  publishedAt         DateTime?
+  version             Int           @default(1)
+  coverImageUrl       String?
+  estimatedReadTime   Int           // Minutes
+  wordCount           Int           @default(0)
+  pageCount           Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  scenes              Scene[]
+  characters          StoryCharacter[]
+  moralArchitecture   MoralArchitecture?
+  emotionGraph        EmotionGraph?
+  metadata            StoryMetadata?
+  voiceNarration      VoiceNarration[]
+  exportFiles         ExportFile[]
+  certifications      SafetyCertification[]
+  readingHistory      ReadingHistory[]
+  educationalMapping  EducationalMapping?
+  lessonPlans         LessonPlan[]
+  marketplaceListing  MarketplaceListing?
+
+  @@map("stories")
+}
+
+enum StoryStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Visibility {
+  PRIVATE
+  SHARED
+  PUBLIC
+  MARKETPLACE
+}
+
+model Scene {
+  id              String   @id @default(uuid())
+  storyId         String
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  sceneNumber     Int
+  title           String?
+  content         String   // Main narrative text
+  imagePrompt     String   // AI image generation prompt
+  imageUrl        String?  // Generated image URL
+  imageMetadata   Json?    // Style tokens, ControlNet data
+  narrativeTone   String   // "gentle" | "exciting" | "calm" | "adventurous"
+  emotionalLevel  Int      @default(5) // 1-10 emotional intensity
+  pageNumber      Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  voiceSegments   VoiceSegment[]
+  emotionNodes    EmotionNode[]
+
+  @@unique([storyId, sceneNumber])
+  @@map("scenes")
+}
+
+model StoryMetadata {
+  id                String   @id @default(uuid())
+  storyId           String   @unique
+  story             Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  themes            String[] // Core themes
+  lessonsTaught     String[] // Educational lessons
+  emotionalJourney  String   // Summary of emotional arc
+  culturalElements  String[] // Cultural representation
+  languageLevel     String   // Reading complexity
+  illustrationStyle String   // Visual style used
+  musicSuggestions  String[] // Ambient sound recommendations
+  parentNotes       String?  // Special notes for parents
+  teacherGuide      String?  // Teaching suggestions
+  triggerWarnings   String[] // Content warnings (if any)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("story_metadata")
+}
+
+// ============================================
+// CHARACTERS & IP
+// ============================================
+
+model Character {
+  id                  String   @id @default(uuid())
+  name                String
+  description         String
+  personality         String[] // Traits
+  appearance          String   // Physical description
+  ageGroup            String   // Age of character
+  species             String?  // "human" | "animal" | "fantasy"
+  ownerId             String
+  owner               User     @relation("CharacterOwner", fields: [ownerId], references: [id])
+  visibility          Visibility @default(PRIVATE)
+  isPublished         Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // IP & Design Assets
+  designSheet         CharacterDesign?
+  characterBible      CharacterBible?
+  styleTokens         CharacterStyle?
+
+  // Relations
+  stories             StoryCharacter[]
+  memories            CharacterMemory[]
+  favorited           FavoriteCharacter[]
+  voiceProfile        VoiceProfile?
+  marketplaceListing  MarketplaceListing?
+
+  @@map("characters")
+}
+
+model CharacterDesign {
+  id                String   @id @default(uuid())
+  characterId       String   @unique
+  character         Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  referenceImages   String[] // URLs to design references
+  colorPalette      Json     // Hex colors for character
+  proportions       Json     // Body proportions, measurements
+  expressions       Json     // Different facial expressions
+  poses             Json     // Common poses, ControlNet data
+  outfits           Json     // Different clothing options
+  accessories       Json     // Props and accessories
+  styleGuide        String   // Detailed visual guidelines
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("character_designs")
+}
+
+model CharacterBible {
+  id                String   @id @default(uuid())
+  characterId       String   @unique
+  character         Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  backstory         String   // Character history
+  motivations       String[] // What drives them
+  fears             String[] // What they're afraid of
+  strengths         String[] // Special abilities or traits
+  weaknesses        String[] // Vulnerabilities
+  relationships     Json     // Connections to other characters
+  growthArc         String   // How they evolve
+  catchphrases      String[] // Signature lines
+  quirks            String[] // Unique behaviors
+  voiceDescription  String   // How they sound
+  worldRules        String   // How they fit in their universe
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("character_bibles")
+}
+
+model CharacterStyle {
+  id                String   @id @default(uuid())
+  characterId       String   @unique
+  character         Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  styleMode         String   // "soft_storybook" | "watercolor" | "cinematic" | "brand_series"
+  aiModelUsed       String   // Internal tracking (not exposed to users)
+  seedValue         String?  // Consistency seed
+  styleTokens       Json     // Model-specific tokens for consistency
+  controlNetData    Json?    // Pose/structure control data
+  negativePrompts   String[] // What to avoid
+  qualitySettings   Json     // Resolution, aspect ratio, etc.
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("character_styles")
+}
+
+model CharacterMemory {
+  id              String   @id @default(uuid())
+  characterId     String
+  character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  worldId         String?
+  world           World?   @relation(fields: [worldId], references: [id])
+  memoryType      String   // "event" | "emotion" | "relationship" | "victory" | "fear"
+  content         String   // What happened
+  emotionalImpact String   // How it affected them
+  significance    Int      // 1-10 importance
+  relatedStoryId  String?  // Story where this occurred
+  createdAt       DateTime @default(now())
+
+  @@map("character_memories")
+}
+
+model StoryCharacter {
   id          String    @id @default(uuid())
-  title       String
-  target      Float
-  current     Float     @default(0)
-  unit        String
-  objectiveId String
-  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  storyId     String
+  story       Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  role        String    // "protagonist" | "sidekick" | "antagonist" | "mentor"
+  importance  String    // "main" | "supporting" | "minor"
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  @@map("key_results")
+  @@unique([storyId, characterId])
+  @@map("story_characters")
+}
+
+model FavoriteCharacter {
+  id          String   @id @default(uuid())
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([childId, characterId])
+  @@map("favorite_characters")
 }
 
 // ============================================
-// METRICS & ANALYTICS
+// WORLDS & UNIVERSES
 // ============================================
 
-model Metric {
-  id        String   @id @default(uuid())
-  name      String
-  value     Float
-  change    Float
-  trend     String // "up" | "down" | "stable"
-  period    String // "monthly" | "quarterly" | "yearly"
-  category  String
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("metrics")
-}
-
-model FeatureAnalytic {
-  id             String   @id @default(uuid())
-  featureName    String
-  adoption       Float
-  engagement     Float
-  retention      Float
-  satisfaction   Float
-  category       String
-  launchedDate   DateTime
-  activeUsers    Int
-  totalUsers     Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("feature_analytics")
-}
-
-model ABTest {
-  id             String   @id @default(uuid())
-  name           String
-  description    String
-  status         String // "running" | "completed" | "paused"
-  startDate      DateTime
-  endDate        DateTime?
-  controlVariant Json // { name, users, conversions, conversionRate }
-  testVariant    Json // { name, users, conversions, conversionRate }
-  winner         String? // "control" | "test" | null
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("ab_tests")
-}
-
-// ============================================
-// CUSTOMERS & FEEDBACK
-// ============================================
-
-model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  company   String?
-  segment   String?
-  revenue   Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model World {
+  id                String   @id @default(uuid())
+  name              String
+  description       String
+  genre             String[] // Genre tags
+  setting           String   // "fantasy" | "modern" | "space" | "historical"
+  visualStyle       String   // Overall aesthetic
+  ownerId           String
+  owner             User     @relation("WorldOwner", fields: [ownerId], references: [id])
+  visibility        Visibility @default(PRIVATE)
+  isPublished       Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  feedback CustomerFeedback[]
+  stories           Story[]
+  worldRules        WorldRules?
+  locations         Location[]
+  memories          CharacterMemory[]
+  favorited         FavoriteWorld[]
+  marketplaceListing MarketplaceListing?
 
-  @@map("customers")
+  @@map("worlds")
 }
 
-model CustomerFeedback {
-  id         String   @id @default(uuid())
-  customer   String
-  feedback   String
-  sentiment  String // "positive" | "negative" | "neutral"
-  category   String
-  priority   String // "low" | "medium" | "high"
-  status     String   @default("open") // "open" | "in-progress" | "resolved"
-  date       DateTime @default(now())
-  customerId String?
-  ownerId    String
-  owner      User     @relation(fields: [ownerId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model WorldRules {
+  id                String   @id @default(uuid())
+  worldId           String   @unique
+  world             World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  magicSystem       String?  // How magic works (if applicable)
+  technologyLevel   String?  // Tech advancement
+  geography         String   // Physical landscape
+  climate           String   // Weather patterns
+  cultures          Json     // Different societies
+  languages         String[] // Spoken languages
+  currency          String?  // Economy
+  government        String?  // Political structure
+  history           String   // World backstory
+  conflicts         String[] // Ongoing tensions
+  uniqueElements    String[] // Special features
+  safetyGuidelines  String   // Content boundaries
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  @@map("customer_feedback")
+  @@map("world_rules")
 }
 
-model CustomerSegment {
-  id             String   @id @default(uuid())
-  name           String
-  description    String
-  customerCount  Int
-  revenue        Float
-  growth         Float
-  characteristics Json
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("customer_segments")
-}
-
-// ============================================
-// COMPETITIVE INTELLIGENCE
-// ============================================
-
-model Competitor {
+model Location {
   id          String   @id @default(uuid())
-  name        String
-  marketShare Float
-  threat      String // "low" | "medium" | "high"
-  strengths   String[]
-  weaknesses  String[]
-  recentMoves String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("competitors")
-}
-
-// ============================================
-// ROADMAP & PLANNING
-// ============================================
-
-model RoadmapItem {
-  id           String   @id @default(uuid())
-  title        String
-  description  String
-  quarter      String
-  year         Int
-  status       String // "planned" | "in-progress" | "launched" | "cancelled"
-  priority     String // "must-have" | "should-have" | "nice-to-have"
-  impact       String // "high" | "medium" | "low"
-  category     String
-  owner        String
-  dependencies String[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("roadmap_items")
-}
-
-// ============================================
-// PROJECTS & EXECUTION
-// ============================================
-
-model Project {
-  id          String   @id @default(uuid())
+  worldId     String
+  world       World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
   name        String
   description String
-  status      String // "planning" | "in-progress" | "completed" | "on-hold"
-  progress    Float    @default(0)
-  budget      Float
-  spent       Float    @default(0)
-  startDate   DateTime
-  endDate     DateTime
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id])
+  imageUrl    String?
+  significance String  // Why it matters
+  atmosphere  String   // Mood/feeling
+  inhabitants String[] // Who lives there
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("locations")
+}
+
+model FavoriteWorld {
+  id        String   @id @default(uuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  worldId   String
+  world     World    @relation(fields: [worldId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([childId, worldId])
+  @@map("favorite_worlds")
+}
+
+// ============================================
+// MORAL ARCHITECTURE & EMOTION ENGINE
+// ============================================
+
+model MoralArchitecture {
+  id                String   @id @default(uuid())
+  storyId           String   @unique
+  story             Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  primaryLesson     String   // Main moral lesson
+  secondaryLessons  String[] // Additional lessons
+  thematicGrowth    String   // Character development arc
+  resolutionType    String   // "comfort" | "triumph" | "understanding"
+  parentActivities  Json     // Suggested discussion prompts and activities
+  valueTags         String[] // ["empathy", "courage", "honesty", etc.]
+  culturalValues    String[] // Represented cultural values
+  conflictType      String   // Type of challenge faced
+  resolutionMethod  String   // How it's resolved
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("moral_architecture")
+}
+
+model EmotionGraph {
+  id                String   @id @default(uuid())
+  storyId           String   @unique
+  story             Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  overallIntensity  Int      @default(5) // 1-10 scale
+  peakIntensity     Int      // Highest emotional point
+  comfortFloor      Int      // Minimum comfort level maintained
+  emotionalArc      String   // "rising" | "falling" | "wave" | "steady"
+  primaryEmotion    String   // Main emotion experienced
+  secondaryEmotions String[] // Additional emotions
+  comfortBands      Json     // Age-appropriate intensity zones
+  calmingPoints     Json     // Scenes designed to soothe
+  excitementPoints  Json     // High-energy moments
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  tasks Task[]
+  nodes EmotionNode[]
 
-  @@map("projects")
+  @@map("emotion_graphs")
 }
 
-model Task {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  status      String   @default("todo") // "todo" | "in-progress" | "done"
-  priority    String   @default("medium") // "low" | "medium" | "high"
-  assignee    String?
-  dueDate     DateTime?
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model EmotionNode {
+  id              String       @id @default(uuid())
+  emotionGraphId  String
+  emotionGraph    EmotionGraph @relation(fields: [emotionGraphId], references: [id], onDelete: Cascade)
+  sceneId         String
+  scene           Scene        @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  intensity       Int          // 1-10 emotional intensity
+  emotionType     String       // "joy" | "fear" | "sadness" | "excitement" | "calm"
+  comfortLevel    Int          // 1-10 how safe child feels
+  purpose         String       // Why this emotion is included
+  createdAt       DateTime     @default(now())
 
-  @@map("tasks")
-}
-
-model TeamMember {
-  id           String   @id @default(uuid())
-  name         String
-  role         String
-  efficiency   Float
-  tasksCompleted Int
-  currentLoad  Int
-  availability String // "available" | "busy" | "away"
-  skills       String[]
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("team_members")
+  @@map("emotion_nodes")
 }
 
 // ============================================
-// REPORTING
+// VOICE & AUDIO
 // ============================================
 
-model Report {
-  id          String   @id @default(uuid())
-  name        String
-  type        String // "executive" | "product" | "financial" | "customer" | "operational"
-  description String?
-  frequency   String // "daily" | "weekly" | "monthly" | "quarterly" | "on-demand"
-  status      String   @default("active") // "active" | "archived"
-  lastRun     DateTime?
-  config      Json? // Report configuration
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model VoiceProfile {
+  id              String    @id @default(uuid())
+  characterId     String    @unique
+  character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  voiceType       String    // "gentle" | "energetic" | "wise" | "playful"
+  pitch           String    // "high" | "medium" | "low"
+  pace            String    // "slow" | "moderate" | "fast"
+  accent          String?   // Accent/dialect
+  voiceModelId    String?   // AI voice model identifier
+  sampleAudioUrl  String?   // Sample recording
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@map("reports")
+  @@map("voice_profiles")
+}
+
+model VoiceNarration {
+  id                String   @id @default(uuid())
+  storyId           String
+  story             Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  mode              String   // "bedtime" | "excitement" | "standard" | "autism-friendly"
+  language          String   @default("en-US")
+  audioFileUrl      String?  // Complete narration
+  duration          Int?     // Seconds
+  generatedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  segments VoiceSegment[]
+
+  @@map("voice_narrations")
+}
+
+model VoiceSegment {
+  id              String         @id @default(uuid())
+  narrationId     String
+  narration       VoiceNarration @relation(fields: [narrationId], references: [id], onDelete: Cascade)
+  sceneId         String
+  scene           Scene          @relation(fields: [sceneId], references: [id])
+  segmentNumber   Int
+  text            String         // Text to narrate
+  ssml            String?        // SSML markup for emotional pacing
+  audioUrl        String?        // Audio file for this segment
+  pitch           String         @default("medium")
+  pace            String         @default("moderate")
+  emotionalTone   String         // "calm" | "excited" | "suspenseful"
+  pauseBefore     Int            @default(0) // Milliseconds
+  pauseAfter      Int            @default(0)
+  ambientSound    String?        // Background sound effect
+  createdAt       DateTime       @default(now())
+
+  @@map("voice_segments")
 }
 
 // ============================================
-// ALERTS & NOTIFICATIONS
+// EDUCATION & STANDARDS
 // ============================================
 
-model Alert {
-  id          String   @id @default(uuid())
-  title       String
-  message     String
-  severity    String // "info" | "warning" | "critical"
-  category    String
-  status      String   @default("active") // "active" | "resolved" | "dismissed"
-  actionUrl   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model EducationalMapping {
+  id              String   @id @default(uuid())
+  storyId         String   @unique
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  selStandards    String[] // Social-Emotional Learning codes
+  ccssLiteracy    String[] // Common Core State Standards
+  gradeLevel      String[] // Appropriate grade levels
+  readingLevel    String   // Lexile/complexity measure
+  comprehensionLevel String // "literal" | "inferential" | "evaluative"
+  vocabularyTier  Int      // 1, 2, or 3
+  literaryDevices String[] // Techniques used
+  discussionTopics String[] // Teaching discussion prompts
+  assessmentIdeas String[] // Comprehension check suggestions
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@map("alerts")
+  @@map("educational_mappings")
+}
+
+model LessonPlan {
+  id                  String   @id @default(uuid())
+  storyId             String
+  story               Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  title               String
+  gradeLevel          String[]
+  subject             String[] // Subject integration
+  duration            Int      // Minutes
+  objectives          String[] // Learning objectives
+  materials           String[] // Required materials
+  activities          Json     // Structured lesson activities
+  assessments         Json     // Comprehension checks
+  differentiation     Json     // Adaptations for different learners
+  homeExtension       String?  // Parent follow-up activities
+  pdfUrl              String?  // Downloadable lesson plan
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("lesson_plans")
+}
+
+model Classroom {
+  id              String          @id @default(uuid())
+  teacherId       String
+  teacher         TeacherProfile  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  name            String
+  gradeLevel      String
+  studentCount    Int             @default(0)
+  accessCode      String          @unique // For student/parent access
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  assignments ClassAssignment[]
+  analytics   ClassroomAnalytics[]
+
+  @@map("classrooms")
+}
+
+model ClassAssignment {
+  id            String   @id @default(uuid())
+  classroomId   String
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  storyId       String
+  title         String
+  description   String?
+  dueDate       DateTime?
+  assignedDate  DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@map("class_assignments")
+}
+
+model ClassroomAnalytics {
+  id              String   @id @default(uuid())
+  classroomId     String
+  classroom       Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  storyId         String
+  completionRate  Float    // Percentage
+  avgReadingTime  Int      // Minutes
+  comprehensionScore Float? // If assessed
+  engagementScore Float    // Derived metric
+  recordedAt      DateTime @default(now())
+
+  @@map("classroom_analytics")
 }
 
 // ============================================
-// INTEGRATIONS & DATA SOURCES
+// SAFETY & CERTIFICATION
 // ============================================
 
-model DataSource {
-  id          String   @id @default(uuid())
-  name        String
-  type        String // "database" | "api" | "file"
-  status      String // "connected" | "disconnected" | "error"
-  lastSync    DateTime?
-  config      Json? // Connection configuration
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model SafetyCertification {
+  id                String   @id @default(uuid())
+  storyId           String
+  story             Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  certificationLevel String  // "CCS-A" | "CCS-B" | "CCS-C" | "CCS-Therapy"
+  safetyScore       Float    // 0-100
+  contentRating     String   // Age appropriateness
+  triggerCheck      Boolean  @default(true)
+  languageCheck     Boolean  @default(true)
+  emotionalCheck    Boolean  @default(true)
+  comfortResolution Boolean  @default(true)
+  complianceLogs    Json     // Detailed audit trail
+  certifiedAt       DateTime @default(now())
+  certifiedBy       String?  // AI or human reviewer
+  expiresAt         DateTime?
+  createdAt         DateTime @default(now())
 
-  @@map("data_sources")
+  @@map("safety_certifications")
 }
 
-model Integration {
-  id          String   @id @default(uuid())
-  name        String // "Slack" | "Jira" | "Salesforce"
-  type        String
-  status      String // "active" | "inactive" | "error"
-  config      Json? // Integration configuration
-  lastUsed    DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model SafetyReport {
+  id              String   @id @default(uuid())
+  reporterId      String
+  reporter        User     @relation(fields: [reporterId], references: [id])
+  contentType     String   // "story" | "character" | "world" | "marketplace"
+  contentId       String   // ID of reported content
+  reason          String   // Reason for report
+  description     String   // Detailed explanation
+  status          String   @default("pending") // "pending" | "reviewing" | "resolved"
+  resolution      String?  // How it was handled
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
 
-  @@map("integrations")
+  @@map("safety_reports")
+}
+
+// ============================================
+// READING & ENGAGEMENT ANALYTICS
+// ============================================
+
+model ReadingHistory {
+  id              String   @id @default(uuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  storyId         String
+  story           Story    @relation(fields: [storyId], references: [id])
+  completedAt     DateTime?
+  timeSpent       Int      // Seconds
+  pagesRead       Int      @default(0)
+  completion      Float    @default(0) // Percentage
+  rereadCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("reading_history")
+}
+
+model EmotionalData {
+  id              String   @id @default(uuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  storyId         String
+  sessionId       String   // Track individual reading sessions
+  dataType        String   // "reread" | "dropout" | "favorite" | "skip"
+  sceneNumber     Int?     // Where event occurred
+  emotionalLevel  Int?     // Child's comfort/intensity at that moment
+  timestamp       DateTime @default(now())
+  anonymized      Boolean  @default(true) // COPPA compliance
+  parentApproved  Boolean  @default(false)
+
+  @@map("emotional_data")
+}
+
+// ============================================
+// MARKETPLACE & CREATOR ECONOMY
+// ============================================
+
+model MarketplaceListing {
+  id              String   @id @default(uuid())
+  sellerId        String
+  seller          User     @relation(fields: [sellerId], references: [id])
+  listingType     String   // "story" | "character" | "world" | "voice_pack" | "style"
+  contentId       String   // ID of the content being sold
+  storyId         String?  @unique
+  story           Story?   @relation(fields: [storyId], references: [id])
+  characterId     String?  @unique
+  character       Character? @relation(fields: [characterId], references: [id])
+  worldId         String?  @unique
+  world           World?   @relation(fields: [worldId], references: [id])
+  title           String
+  description     String
+  price           Float    // USD
+  licenseType     String   // "personal" | "commercial" | "exclusive"
+  previewUrl      String?  // Preview/sample
+  thumbnailUrl    String?
+  tags            String[]
+  category        String
+  isActive        Boolean  @default(true)
+  salesCount      Int      @default(0)
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  purchases Purchase[]
+  reviews   Review[]
+
+  @@map("marketplace_listings")
+}
+
+model Purchase {
+  id              String             @id @default(uuid())
+  buyerId         String
+  buyer           User               @relation(fields: [buyerId], references: [id])
+  listingId       String
+  listing         MarketplaceListing @relation(fields: [listingId], references: [id])
+  amount          Float
+  currency        String             @default("USD")
+  licenseType     String
+  transactionId   String             @unique // Payment processor transaction ID
+  status          String             @default("completed")
+  purchasedAt     DateTime           @default(now())
+
+  @@map("purchases")
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  userId          String   // Seller receiving payment
+  user            User     @relation(fields: [userId], references: [id])
+  type            String   // "sale" | "royalty" | "withdrawal"
+  amount          Float
+  currency        String   @default("USD")
+  status          String   // "pending" | "completed" | "failed"
+  description     String?
+  relatedPurchaseId String?
+  paymentMethod   String?  // "stripe" | "paypal"
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Review {
+  id              String             @id @default(uuid())
+  listingId       String
+  listing         MarketplaceListing @relation(fields: [listingId], references: [id])
+  reviewerName    String             // Anonymous or display name
+  rating          Int                // 1-5 stars
+  comment         String?
+  verified        Boolean            @default(false) // Verified purchase
+  helpful         Int                @default(0)    // Helpfulness votes
+  createdAt       DateTime           @default(now())
+
+  @@map("reviews")
+}
+
+// ============================================
+// EXPORT & DELIVERY
+// ============================================
+
+model ExportFile {
+  id              String   @id @default(uuid())
+  storyId         String
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  format          String   // "pdf" | "epub" | "audio_mp3" | "print_ready" | "licensing_kit"
+  fileUrl         String   // Download URL
+  fileSize        Int      // Bytes
+  metadata        Json?    // Format-specific metadata
+  generatedAt     DateTime @default(now())
+  expiresAt       DateTime? // Temporary download links
+
+  @@map("export_files")
+}
+
+// ============================================
+// SYSTEM & ADMINISTRATION
+// ============================================
+
+model AIUsageLog {
+  id              String   @id @default(uuid())
+  agentType       String   // "writer" | "critic" | "safety" | "image" | "voice"
+  operation       String   // Specific operation
+  modelUsed       String   // AI model identifier
+  tokensUsed      Int?
+  cost            Float?
+  userId          String?
+  storyId         String?
+  success         Boolean  @default(true)
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@map("ai_usage_logs")
+}
+
+model SystemConfig {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  value           String
+  description     String?
+  category        String   // "ai" | "safety" | "payment" | "feature_flag"
+  updatedAt       DateTime @updatedAt
+
+  @@map("system_config")
 }
